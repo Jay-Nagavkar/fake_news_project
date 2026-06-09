@@ -55,20 +55,23 @@ def live_news():
 
         news_results = []
         for article in news_data["data"]:
-            title = article["title"]
-
-            # Avoid showing duplicate news
+            title = article.get("title", "")
+            description = article.get("description", "")
+            
+            # Skip duplicates
             if title in displayed_articles:
                 continue
             displayed_articles.add(title)
 
-            text_vectorized = vectorizer.transform([title])
+            # Match the new training pipeline: combine title and description
+            combined_text = f"{title} {description}"
+            
+            text_vectorized = vectorizer.transform([combined_text])
             prediction = model.predict(text_vectorized)[0]
             result = "Real News 📰" if prediction == 1 else "Fake News 🚨"
 
             news_results.append({"title": title, "prediction": result})
 
-            # Limit to 5 news items
             if len(news_results) >= 5:
                 break
 

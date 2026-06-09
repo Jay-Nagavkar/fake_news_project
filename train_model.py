@@ -3,14 +3,13 @@ import pickle
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import PassiveAggressiveClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-# Load Fake and Real news datasets
-# 'on_bad_lines="skip"' skips problematic lines that might break the parser
+# Load datasets (skipping bad lines for robustness)
 fake_df = pd.read_csv("Fake.csv", on_bad_lines="skip")
 real_df = pd.read_csv("True.csv", on_bad_lines="skip")
 
-# Add a 'label' column (0 = Fake, 1 = Real)
+# Add labels
 fake_df["label"] = 0
 real_df["label"] = 1
 
@@ -19,30 +18,33 @@ min_len = min(len(fake_df), len(real_df))
 fake_df = fake_df.sample(n=min_len, random_state=7)
 real_df = real_df.sample(n=min_len, random_state=7)
 
-# Merge datasets and shuffle
+# Merge datasets
 df = pd.concat([fake_df, real_df], ignore_index=True).sample(frac=1, random_state=7).reset_index(drop=True)
 
-# Drop rows where the 'text' field is missing
-df = df.dropna(subset=["text"])
+# THE FIX: Combine Title and Text for a richer feature set
+# (Assuming your dataset has a 'title' column, which the standard Fake/True datasets do)
+df["full_text"] = df["title"] + " " + df["text"]
+df = df.dropna(subset=["full_text"])
 
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=7)
+# Split data using the new combined feature
+X_train, X_test, y_train, y_test = train_test_split(df["full_text"], df["label"], test_size=0.2, random_state=7)
 
-# Convert text into numerical features using TF-IDF
+# Vectorization
 vectorizer = TfidfVectorizer(stop_words="english", max_df=0.7)
 X_train_tfidf = vectorizer.fit_transform(X_train)
 X_test_tfidf = vectorizer.transform(X_test)
 
-# Train Passive-Aggressive Classifier
+# Train Classifier
 model = PassiveAggressiveClassifier(max_iter=50)
 model.fit(X_train_tfidf, y_train)
 
-# Evaluate accuracy
+# Better Evaluation Metrics
 y_pred = model.predict(X_test_tfidf)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Model Accuracy: {accuracy:.2f}")
+print(f"Model Accuracy: {accuracy_score(y_test, y_pred):.2f}\n")
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
 
-# Save trained model and vectorizer
+# Save models
 pickle.dump(model, open("model.pkl", "wb"))
 pickle.dump(vectorizer, open("vectorizer.pkl", "wb"))
 
