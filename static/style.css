@@ -1,0 +1,87 @@
+/* General Styling */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #dcd8da;
+    color: black;
+    text-align: center;
+    padding: 20px;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+/* Heading */
+h2 {
+    font-size: 28px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    background: #ff416c;
+   margin: 10px;
+   padding: 10px;
+     color: #222;
+     border-radius: 15px;
+}
+
+/* Textarea */
+textarea {
+    width: 60%;
+    height: 150px;
+    padding: 15px;
+    font-size: 16px;
+    border: 2px solid #ddd;
+    border-radius: 20px;
+    background: #fff;
+    color: #2e7eda;
+    outline: none;
+    resize: none;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+textarea:focus {
+    border-color: #ff9a9e;
+    box-shadow: 0 0 10px rgba(255, 154, 158, 0.5);
+}
+
+/* Button */
+button {
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 30px;
+    margin-top: 15px;
+    transition: 0.3s ease-in-out;
+    box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 65, 108, 0.5);
+}
+
+/* Result Styling */
+h3 {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    padding: 15px;
+    border-radius: 10px;
+    display: inline-block;
+    background: #dca9bf;
+    color: #222;
+    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    textarea {
+        width: 90%;
+    }
+}

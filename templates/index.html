@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Fake News Detector</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script>
+        async function checkNews() {
+            let newsText = document.getElementById("newsText").value;
+            let resultDiv = document.getElementById("result");
+
+            if (newsText.trim() === "") {
+                resultDiv.innerText = "Please enter some text!";
+                resultDiv.style.color = "red";
+                return;
+            }
+
+            let response = await fetch("/predict", {
+                method: "POST",
+                body: JSON.stringify({ "news_text": newsText }),
+                headers: { "Content-Type": "application/json" }
+            });
+
+            let data = await response.json();
+            if (data.prediction) {
+                resultDiv.innerText = data.prediction;
+                resultDiv.style.color = data.prediction.includes("Real") ? "green" : "red";
+            } else {
+                resultDiv.innerText = "Error occurred!";
+                resultDiv.style.color = "red";
+            }
+        }
+
+        async function loadLiveNews() {
+            let newsDiv = document.getElementById("liveNews");
+            newsDiv.innerHTML = "<p>Loading latest news...</p>";
+
+            let response = await fetch("/live-news");
+            let data = await response.json();
+
+            if (data.error) {
+                newsDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+                return;
+            }
+
+            newsDiv.innerHTML = "";
+            data.forEach((news, index) => {
+                let newsItem = document.createElement("div");
+                newsItem.innerHTML = `<p><strong>${index + 1}. ${news.title}</strong> - <span style="color: ${news.prediction.includes('Real') ? 'green' : 'red'};">${news.prediction}</span></p>`;
+                newsDiv.appendChild(newsItem);
+            });
+        }
+
+        // Update live news every 10 seconds
+        setInterval(loadLiveNews, 10000);
+
+        window.onload = loadLiveNews;
+    </script>
+</head>
+<body>
+    <h2>Real-Time Fake News Detector</h2>
+    
+    <h3>Check Your Own News</h3>
+    <textarea id="newsText" placeholder="Type or paste news content here..." rows="4" cols="50"></textarea>
+    <br><br>
+    <button onclick="checkNews()">Check News</button>
+    <h3 id="result"></h3>
+
+    <h3>Live News Classification</h3>
+    <div id="liveNews"></div>
+</body>
+</html>
