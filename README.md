@@ -30,3 +30,13 @@ It features two core functionalities:
 ```bash
 git clone [https://github.com/yourusername/fake-news-detector.git](https://github.com/yourusername/fake-news-detector.git)
 cd fake-news-detector
+
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
+pip install -r requirements.txt
+Create a .env file in the root directory and add your MediaStack API key:
+NEWS_API_KEY=your_api_key_here
+
+python app.py
+
+Built by Jay — Artificial Intelligence and Data Science Engineering.
