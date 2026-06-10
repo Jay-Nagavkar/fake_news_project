@@ -1,75 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Fake News Detector</title>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
-    <script>
-        async function checkNews() {
-            let newsText = document.getElementById("newsText").value;
-            let resultDiv = document.getElementById("result");
-
-            if (newsText.trim() === "") {
-                resultDiv.innerText = "Please enter some text!";
-                resultDiv.style.color = "red";
-                return;
-            }
-
-            let response = await fetch("/predict", {
-                method: "POST",
-                body: JSON.stringify({ "news_text": newsText }),
-                headers: { "Content-Type": "application/json" }
-            });
-
-            let data = await response.json();
-            if (data.prediction) {
-                resultDiv.innerText = data.prediction;
-                resultDiv.style.color = data.prediction.includes("Real") ? "green" : "red";
-            } else {
-                resultDiv.innerText = "Error occurred!";
-                resultDiv.style.color = "red";
-            }
-        }
-
-        async function loadLiveNews() {
-            let newsDiv = document.getElementById("liveNews");
-            newsDiv.innerHTML = "<p>Loading latest news...</p>";
-
-            let response = await fetch("/live-news");
-            let data = await response.json();
-
-            if (data.error) {
-                newsDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
-                return;
-            }
-
-            newsDiv.innerHTML = "";
-            data.forEach((news, index) => {
-                let newsItem = document.createElement("div");
-                newsItem.innerHTML = `<p><strong>${index + 1}. ${news.title}</strong> - <span style="color: ${news.prediction.includes('Real') ? 'green' : 'red'};">${news.prediction}</span></p>`;
-                newsDiv.appendChild(newsItem);
-            });
-        }
-
-        // Update live news every 10 seconds
-        setInterval(loadLiveNews, 10000);
-
-        window.onload = loadLiveNews;
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake News Detector</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2>Real-Time Fake News Detector</h2>
-    
-    <h3>Check Your Own News</h3>
-    <textarea id="newsText" placeholder="Type or paste news content here..." rows="4" cols="50"></textarea>
-    <br><br>
-    <button onclick="checkNews()">Check News</button>
-    <h3 id="result"></h3>
+  <div class="container">
+    <h1>Fake News Detector <span class="badge">XAI Enabled</span></h1>
 
-    <h3>Live News Classification</h3>
-    <div id="liveNews"></div>
+    <div class="card">
+      <h2>Manual Analysis</h2>
+      <textarea id="newsText" placeholder="Paste news text here..."></textarea>
+      <button onclick="analyzeNews()">Analyze Text</button>
+
+      <div id="resultBox" class="result-box hidden">
+        <h3 id="prediction"></h3>
+        <p id="confidence"></p>
+        <p id="probabilities"></p>
+
+        <h4>Word-by-word Analysis</h4>
+        <ul id="explanationList"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Live News Feed</h2>
+      <div id="liveNews">Loading latest articles...</div>
+    </div>
+  </div>
+
+  <script>
+    async function analyzeNews() {
+      const newsText = document.getElementById("newsText").value.trim();
+      const resultBox = document.getElementById("resultBox");
+      const prediction = document.getElementById("prediction");
+      const confidence = document.getElementById("confidence");
+      const probabilities = document.getElementById("probabilities");
+      const explanationList = document.getElementById("explanationList");
+
+      if (!newsText) {
+        prediction.textContent = "Please enter some news text.";
+        confidence.textContent = "";
+        probabilities.textContent = "";
+        explanationList.innerHTML = "";
+        resultBox.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ news_text: newsText })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          prediction.textContent = data.error;
+          confidence.textContent = "";
+          probabilities.textContent = "";
+          explanationList.innerHTML = "";
+          resultBox.classList.remove("hidden");
+          return;
+        }
+
+        prediction.textContent = data.prediction;
+        confidence.textContent = "Confidence: " + data.confidence;
+
+        if (data.probabilities) {
+          probabilities.textContent =
+            `Fake: ${data.probabilities.fake}% | Real: ${data.probabilities.real}%`;
+        } else {
+          probabilities.textContent = "";
+        }
+
+        explanationList.innerHTML = "";
+
+        if (data.explanation && data.explanation.length > 0) {
+          data.explanation.forEach(item => {
+            const li = document.createElement("li");
+
+            if (Array.isArray(item)) {
+              const [word, score] = item;
+              li.innerHTML = `<strong>${word}</strong>: ${score.toFixed(4)}`;
+            } else {
+              li.innerHTML = `<strong>${item.word}</strong> (${item.impact}): ${item.score}`;
+            }
+
+            explanationList.appendChild(li);
+          });
+        } else {
+          explanationList.innerHTML = "<li>No explanation available.</li>";
+        }
+
+        resultBox.classList.remove("hidden");
+      } catch (error) {
+        prediction.textContent = "Failed to analyze text.";
+        confidence.textContent = "";
+        probabilities.textContent = "";
+        explanationList.innerHTML = "";
+        resultBox.classList.remove("hidden");
+      }
+    }
+
+    async function loadLiveNews() {
+      const liveNews = document.getElementById("liveNews");
+
+      try {
+        const response = await fetch("/live-news");
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          liveNews.innerHTML = "<p>Unable to load news.</p>";
+          return;
+        }
+
+        liveNews.innerHTML = data.map((item, index) => `
+          <div class="news-item">
+            <p><strong>${index + 1}. ${item.title}</strong></p>
+            <p class="${item.prediction.includes('Fake') ? 'fake' : 'real'}">${item.prediction}</p>
+            ${item.confidence ? `<p class="confidence">Confidence: ${item.confidence}</p>` : ""}
+          </div>
+        `).join("");
+      } catch (error) {
+        liveNews.innerHTML = "<p>Failed to load live news.</p>";
+      }
+    }
+
+    loadLiveNews();
+  </script>
 </body>
 </html>
